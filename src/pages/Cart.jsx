@@ -232,8 +232,9 @@ const Cart = () => {
   return (
     <div className='border-t pt-10'>
       <div className='text-2xl mb-3'>
-       
-        <div className='flex justify-center mx-5 text-5xl gap-3'>
+        {/* <Title text1={'YOUR'} text2={ ' CART'} />
+          <div className='w-40 h-1 bg-black mt-6'></div> */}
+        <div className='flex justify-center text-5xl gap-3'>
           <Title text1={'YOUR'} text2={' CART'} />
           <div className='w-40 h-1 bg-black mt-6'></div>
         </div>

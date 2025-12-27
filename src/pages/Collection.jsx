@@ -15,7 +15,7 @@ const Collection = () => {
   const [sortBy, setsortBy] = useState('relevant')
   useEffect(() => {
     setfilterProducts(products)
-  }, [category, subCategory, search, showSearch])
+  }, [])
 
   
  const toggleCategory = (event) => {
@@ -61,7 +61,50 @@ const applyFilter = () => {
   setfilterProducts(productsCopy);
 };
 
+// const applyFilter = () => {
+//   let productsCopy = products.slice();
 
+//   if (showsearch && search) {
+//     productsCopy = productsCopy.filter(item =>
+//       item.name.toLowerCase().includes(search.toLowerCase())
+//     );
+//   }
+
+//   if (category.length > 0) {
+//     productsCopy = productsCopy.filter(item =>
+//       category.includes(item.category)
+//     );
+//   }
+
+//   if (subCategory.length > 0) {
+//     productsCopy = productsCopy.filter(item =>
+//       subCategory.includes(item.subCategory)
+//     );
+//   }
+
+//   setfilterProducts(productsCopy);
+// };
+
+// const applyFilter = () => {
+//   let productsCopy = products.slice();
+//   if(showsearch && search)
+//   {
+//    productsCopy = productsCopy.filter(item =>
+//   item.name.toLowerCase().includes(search.toLowerCase())
+// );
+
+// ;  }
+//   if (category.length > 0) {
+//     productsCopy = productsCopy.filter(item => category.includes(item.category));
+//   }
+
+//   // You can add subCategory logic here 
+//    if (subCategory.length > 0) {
+//     productsCopy = productsCopy.filter(item => subCategory.includes(item.subCategory));
+//   }
+
+//   setfilterProducts(productsCopy);
+// };
  const sortProducts=()=>{
 
   let filterProductsCopy = filterProducts.slice();
@@ -86,7 +129,7 @@ const applyFilter = () => {
  }
 useEffect(() => {
   applyFilter()
-}, [category,subCategory,search,showSearch])
+}, [category,subCategory,search,products])
 
 useEffect(() => {
  sortProducts()
