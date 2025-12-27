@@ -1,19 +1,55 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
+import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext";
+import { toast } from "react-toastify";
 
 const Login = () => {
   const [mode, setMode] = useState("signup"); // default is Sign Up
+  const [loading, setLoading] = useState(false);
+  const { login, register } = useContext(AuthContext);
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    
     const formData = new FormData(e.target);
     const name = formData.get("name");
     const email = formData.get("email");
     const password = formData.get("password");
 
-    if (mode === "signup") {
-      alert(`Account Created!\nName: ${name}\nEmail: ${email}`);
-    } else {
-      alert(`Logging in with Email: ${email}`);
+    try {
+      if (mode === "signup") {
+        const result = await register(name, email, password);
+        if (result.success) {
+          toast.success("Account created successfully!");
+          // Redirect based on role
+          if (result.user.role === "admin") {
+            navigate("/dashboard");
+          } else {
+            navigate("/");
+          }
+        } else {
+          toast.error(result.message || "Registration failed");
+        }
+      } else {
+        const result = await login(email, password);
+        if (result.success) {
+          toast.success("Login successful!");
+          // Redirect based on role
+          if (result.user.role === "admin") {
+            navigate("/dashboard");
+          } else {
+            navigate("/");
+          }
+        } else {
+          toast.error(result.message || "Login failed");
+        }
+      }
+    } catch (error) {
+      toast.error("An error occurred. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -79,9 +115,10 @@ const Login = () => {
           {/* Submit button */}
           <button
             type="submit"
-            className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition duration-200"
+            disabled={loading}
+            className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {mode === "signup" ? "Sign Up" : "Login"}
+            {loading ? "Please wait..." : mode === "signup" ? "Sign Up" : "Login"}
           </button>
         </form>
 

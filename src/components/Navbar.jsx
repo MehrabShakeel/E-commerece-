@@ -6,15 +6,26 @@ import { FiSearch } from "react-icons/fi";
 import { IoMdContact } from "react-icons/io";
 import { FaCartFlatbedSuitcase } from "react-icons/fa6";
 import { RxHamburgerMenu, RxCross1 } from "react-icons/rx";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { ShopContext } from '../context/ShopContextProvider';
+import { AuthContext } from '../context/AuthContext';
+import { toast } from 'react-toastify';
 
 const Navbar = () => {
   const { setshowSearch, getCartCount } = useContext(ShopContext);
+  const { user, isAuthenticated, logout, isAdmin } = useContext(AuthContext);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const closeMenu = () => setIsMenuOpen(false);
+
+  const handleLogout = () => {
+    logout();
+    toast.success('Logged out successfully');
+    navigate('/');
+    closeMenu();
+  };
 
   return (
     <>
@@ -26,13 +37,24 @@ const Navbar = () => {
           <li><Link to="/collection" className='hover:underline'>COLLECTION</Link></li>
           <li><Link to="/about" className='hover:underline'>ABOUT</Link></li>
           <li><Link to="/contact" className='hover:underline'>CONTACT</Link></li>
+          {isAdmin() && (
+            <li><Link to="/dashboard" className='hover:underline'>DASHBOARD</Link></li>
+          )}
         </ul>
 
         <div className='flex items-center gap-6 text-2xl pt-1'>
           <FiSearch onClick={() => setshowSearch(true)} className="cursor-pointer" />
 
-         <Link to={'/login'}><IoMdContact className="cursor-pointer" />
-</Link> 
+          {isAuthenticated() ? (
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-700 hidden md:block">{user?.name}</span>
+              <button onClick={handleLogout} className="text-sm text-gray-700 hover:text-black">
+                Logout
+              </button>
+            </div>
+          ) : (
+            <Link to={'/login'}><IoMdContact className="cursor-pointer" /></Link>
+          )} 
           <Link to="/cart" className="relative cursor-pointer">
             <FaCartFlatbedSuitcase />
             {getCartCount() > 0 && (
@@ -54,6 +76,17 @@ const Navbar = () => {
           <Link to="/collection" onClick={closeMenu}>COLLECTION</Link>
           <Link to="/about" onClick={closeMenu}>ABOUT</Link>
           <Link to="/contact" onClick={closeMenu}>CONTACT</Link>
+          {isAdmin() && (
+            <Link to="/dashboard" onClick={closeMenu}>DASHBOARD</Link>
+          )}
+          {isAuthenticated() ? (
+            <>
+              <span className="text-base font-normal text-gray-600">{user?.name}</span>
+              <button onClick={handleLogout} className="text-left">LOGOUT</button>
+            </>
+          ) : (
+            <Link to="/login" onClick={closeMenu}>LOGIN</Link>
+          )}
         </div>
       )}
     </>

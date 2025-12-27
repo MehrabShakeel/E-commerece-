@@ -10,9 +10,12 @@ import Placeorder from "./pages/Placeorder";
 import Cart from "./pages/Cart";
 import Login from "./pages/Login";
 import Order from "./pages/Order";
+import Dashboard from "./pages/Dashboard";
+import Users from "./pages/Users";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import SearchBar from "./components/SearchBar";
+import ProtectedRoute from "./components/ProtectedRoute";
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -33,6 +36,22 @@ const App = () => {
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/order" element={<Order />} />
+                <Route
+                    path="/dashboard"
+                    element={
+                        <ProtectedRoute requireAdmin={true}>
+                            <Dashboard />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/dashboard/users"
+                    element={
+                        <ProtectedRoute requireAdmin={true}>
+                            <Users />
+                        </ProtectedRoute>
+                    }
+                />
             </Routes>
             <Footer />
 

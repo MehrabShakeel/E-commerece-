@@ -23,16 +23,18 @@ const backend_url = import.meta.env.VITE_BACKEND_URL;
       toast.error('Please select size first');
       return;
     }
+    // Ensure itemId is a string for consistent cart key usage
+    const cartKey = itemId?.toString();
     let cartData = structuredClone(cartItems);
-    if (cartData[itemId]) {
-      if (cartData[itemId][size]) {
-        cartData[itemId][size] += 1;
+    if (cartData[cartKey]) {
+      if (cartData[cartKey][size]) {
+        cartData[cartKey][size] += 1;
       } else {
-        cartData[itemId][size] = 1;
+        cartData[cartKey][size] = 1;
       }
     } else {
-      cartData[itemId] = {};
-      cartData[itemId][size] = 1;
+      cartData[cartKey] = {};
+      cartData[cartKey][size] = 1;
     }
     setcartItems(cartData);
   };
@@ -57,13 +59,15 @@ const backend_url = import.meta.env.VITE_BACKEND_URL;
       for (const size in cartItems[productId]) {
         if (cartItems[productId][size] > 0) {
           const productData = products.find(
-            (p) => p.id === parseInt(productId)
+            (p) => (p.id || p._id) === productId || (p.id || p._id)?.toString() === productId
           );
-          cartArray.push({
-            ...productData,
-            size: size,
-            quantity: cartItems[productId][size],
-          });
+          if (productData) {
+            cartArray.push({
+              ...productData,
+              size: size,
+              quantity: cartItems[productId][size],
+            });
+          }
         }
       }
     }
@@ -100,12 +104,14 @@ const getCartTotal = () => {
 
   for (const productId in cartItems) {
     let itemInfo = products.find(
-      (product) => product.id === parseInt(productId)
+      (product) => (product.id || product._id)?.toString() === productId.toString()
     );
 
-    for (const size in cartItems[productId]) {
-      if (cartItems[productId][size] > 0) {
-        totalAmount += itemInfo.price * cartItems[productId][size];
+    if (itemInfo) {
+      for (const size in cartItems[productId]) {
+        if (cartItems[productId][size] > 0) {
+          totalAmount += itemInfo.price * cartItems[productId][size];
+        }
       }
     }
   }
@@ -113,27 +119,35 @@ const getCartTotal = () => {
   return totalAmount;
 };
 
-// const getProductsData= async()=>{
-//   try {
-//     const response = await axios.get(backend_url+'/api/product/list');
-//     // console.log(response.data);
-//     if (response.data.success) {
-//       setproducts(response.data.products)
-      
-//     } else {
-//       toast.error(response.data.message)
-//     }
-//   } catch (error) {
-//     console.log(error);
-    
-//     toast.error(error.message)
-//   }
-// }
+const getProductsData = async () => {
+  try {
+    if (!backend_url) {
+      console.warn('Backend URL not configured');
+      return;
+    }
+    const response = await axios.get(backend_url + '/api/product/list');
+    if (response.data.success) {
+      // Map products to ensure id field is available
+      const mappedProducts = response.data.products.map(product => ({
+        ...product,
+        id: product.id || product._id
+      }));
+      setproducts(mappedProducts);
+    } else {
+      toast.error(response.data.message);
+    }
+  } catch (error) {
+    console.log(error);
+    // Don't show error toast if backend is not running (for development)
+    if (error.code !== 'ERR_NETWORK' && error.code !== 'ECONNREFUSED') {
+      toast.error(error.message);
+    }
+  }
+};
 
-// useEffect(() => {
-  
-// getProductsData();
-// }, [])
+useEffect(() => {
+  getProductsData();
+}, [backend_url]);
 
 
 const value = {

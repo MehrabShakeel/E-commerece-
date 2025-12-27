@@ -132,10 +132,12 @@ const Product = () => {
   const [selectedSize, setSelectedSize] = useState('');
 
   useEffect(() => {
-    const item = products.find((item) => item.id === Number(id));
+    const item = products.find((item) => {
+      const itemId = item.id || item._id;
+      return itemId?.toString() === id.toString() || Number(itemId) === Number(id);
+    });
     if (item) {
       setProductData(item);
-      // ❌ Removed default size selection
     }
   }, [id, products]);
 
