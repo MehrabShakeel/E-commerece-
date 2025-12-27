@@ -1,178 +1,197 @@
-
-
-import React, { createContext, useState ,useEffect} from 'react';
-import axios from "axios";
-// import { products } from '../assets/assets';
+import React, { createContext, useState, useEffect } from 'react';
+import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 
+// Create context for shop/cart
 export const ShopContext = createContext();
 
 const ShopContextProvider = (props) => {
-  const currency = "$";
-  const delivery_fee = 10;
-const backend_url = import.meta.env.VITE_BACKEND_URL;
-  const [search, setsearch] = useState('');
-  const [showSearch, setshowSearch] = useState(false);
-  const [cartItems, setcartItems] = useState({});
+  // Constants
+  const currency = '$';
+  const deliveryFee = 10;
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+  
+  // State variables
+  const [search, setSearch] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+  const [cartItems, setCartItems] = useState({});
+  const [products, setProducts] = useState([]);
   const navigate = useNavigate();
-  const [products, setproducts] = useState([])
 
+  // Add item to cart
   const addToCart = (itemId, size) => {
+    // Check if size is selected
     if (!size) {
       toast.error('Please select size first');
       return;
     }
-    // Ensure itemId is a string for consistent cart key usage
-    const cartKey = itemId?.toString();
-    let cartData = structuredClone(cartItems);
-    if (cartData[cartKey]) {
-      if (cartData[cartKey][size]) {
-        cartData[cartKey][size] += 1;
+
+    // Convert itemId to string for consistency
+    const productId = itemId.toString();
+    
+    // Create copy of cart items
+    const newCartItems = { ...cartItems };
+
+    // If product already in cart
+    if (newCartItems[productId]) {
+      // If this size already exists, increase quantity
+      if (newCartItems[productId][size]) {
+        newCartItems[productId][size] += 1;
       } else {
-        cartData[cartKey][size] = 1;
+        // Add new size
+        newCartItems[productId][size] = 1;
       }
     } else {
-      cartData[cartKey] = {};
-      cartData[cartKey][size] = 1;
+      // Add new product to cart
+      newCartItems[productId] = {};
+      newCartItems[productId][size] = 1;
     }
-    setcartItems(cartData);
+
+    setCartItems(newCartItems);
   };
 
+  // Get total number of items in cart
   const getCartCount = () => {
     let totalCount = 0;
-    for (const items in cartItems) {
-      for (const item in cartItems[items]) {
-        try {
-          if (cartItems[items][item] > 0) {
-            totalCount += cartItems[items][item];
-          }
-        } catch { }
+    
+    // Loop through all products in cart
+    for (const productId in cartItems) {
+      // Loop through all sizes for each product
+      for (const size in cartItems[productId]) {
+        const quantity = cartItems[productId][size];
+        if (quantity > 0) {
+          totalCount += quantity;
+        }
       }
     }
+    
     return totalCount;
   };
 
+  // Get cart data as array
   const getCartData = () => {
-    let cartArray = [];
+    const cartArray = [];
+    
+    // Loop through all products in cart
     for (const productId in cartItems) {
+      // Loop through all sizes for each product
       for (const size in cartItems[productId]) {
-        if (cartItems[productId][size] > 0) {
-          const productData = products.find(
-            (p) => (p.id || p._id) === productId || (p.id || p._id)?.toString() === productId
-          );
-          if (productData) {
+        const quantity = cartItems[productId][size];
+        
+        if (quantity > 0) {
+          // Find product details
+          const product = products.find((p) => {
+            const id = p.id || p._id;
+            return id?.toString() === productId.toString();
+          });
+          
+          if (product) {
             cartArray.push({
-              ...productData,
+              ...product,
               size: size,
-              quantity: cartItems[productId][size],
+              quantity: quantity
             });
           }
         }
       }
     }
+    
     return cartArray;
   };
 
-  const updateQuantity = async (itemId, size, quantity) => {
-    let cartData = structuredClone(cartItems)
-    cartData[itemId][size] = quantity;
-    setcartItems(cartData);
-  }
+  // Update quantity of item in cart
+  const updateQuantity = (itemId, size, quantity) => {
+    const newCartItems = { ...cartItems };
+    newCartItems[itemId][size] = quantity;
+    setCartItems(newCartItems);
+  };
 
-  // const getCartTotal =  () => {
-  //   let totalAmount = 0;
-  //   for (const items in cartItems) {
-  //     let itemInfo = products.find((product) => product.id === items);
-  //     for (const item in cartItems[items]) {
-  //       try {
-  //         if (cartItems[items][item] > 0) {
-  //           totalAmount += itemInfo.price * cartItems[items][item]
-  //         }
-  //       } catch (error) {
+  // Get total price of all items in cart
+  const getCartTotal = () => {
+    let totalAmount = 0;
 
-  //       }
+    // Loop through all products in cart
+    for (const productId in cartItems) {
+      // Find product details
+      const product = products.find((p) => {
+        const id = p.id || p._id;
+        return id?.toString() === productId.toString();
+      });
 
-  //     }
-
-
-  //   }
-  //   return totalAmount;
-  // }
-const getCartTotal = () => {
-  let totalAmount = 0;
-
-  for (const productId in cartItems) {
-    let itemInfo = products.find(
-      (product) => (product.id || product._id)?.toString() === productId.toString()
-    );
-
-    if (itemInfo) {
-      for (const size in cartItems[productId]) {
-        if (cartItems[productId][size] > 0) {
-          totalAmount += itemInfo.price * cartItems[productId][size];
+      if (product) {
+        // Loop through all sizes for this product
+        for (const size in cartItems[productId]) {
+          const quantity = cartItems[productId][size];
+          if (quantity > 0) {
+            totalAmount += product.price * quantity;
+          }
         }
       }
     }
-  }
 
-  return totalAmount;
-};
+    return totalAmount;
+  };
 
-const getProductsData = async () => {
-  try {
-    if (!backend_url) {
-      console.warn('Backend URL not configured');
-      return;
+  // Fetch products from backend
+  const getProductsData = async () => {
+    try {
+      if (!backendUrl) {
+        console.warn('Backend URL not configured');
+        return;
+      }
+
+      const response = await axios.get(`${backendUrl}/api/product/list`);
+      
+      if (response.data.success) {
+        // Ensure all products have an id field
+        const productsWithId = response.data.products.map(product => ({
+          ...product,
+          id: product.id || product._id
+        }));
+        
+        setProducts(productsWithId);
+      } else {
+        toast.error(response.data.message);
+      }
+    } catch (error) {
+      console.log(error);
+      // Don't show error if backend is not running (for development)
+      if (error.code !== 'ERR_NETWORK' && error.code !== 'ECONNREFUSED') {
+        toast.error(error.message);
+      }
     }
-    const response = await axios.get(backend_url + '/api/product/list');
-    if (response.data.success) {
-      // Map products to ensure id field is available
-      const mappedProducts = response.data.products.map(product => ({
-        ...product,
-        id: product.id || product._id
-      }));
-      setproducts(mappedProducts);
-    } else {
-      toast.error(response.data.message);
-    }
-  } catch (error) {
-    console.log(error);
-    // Don't show error toast if backend is not running (for development)
-    if (error.code !== 'ERR_NETWORK' && error.code !== 'ECONNREFUSED') {
-      toast.error(error.message);
-    }
-  }
-};
+  };
 
-useEffect(() => {
-  getProductsData();
-}, [backend_url]);
+  // Fetch products when component mounts
+  useEffect(() => {
+    getProductsData();
+  }, [backendUrl]);
 
+  // Value to provide to context
+  const value = {
+    currency: currency,
+    delivery_fee: deliveryFee,
+    products: products,
+    search: search,
+    setsearch: setSearch,
+    showSearch: showSearch,
+    setshowSearch: setShowSearch,
+    cartItems: cartItems,
+    addToCart: addToCart,
+    getCartCount: getCartCount,
+    getCartData: getCartData,
+    updateQuantity: updateQuantity,
+    getCartTotal: getCartTotal,
+    navigate: navigate,
+    backend_url: backendUrl
+  };
 
-const value = {
-  currency,
-  delivery_fee,
-  products,
-  search,
-  setsearch,
-  showSearch,
-  setshowSearch,
-  cartItems,
-  addToCart,
-  getCartCount,
-  getCartData,
-  updateQuantity,
-  getCartTotal,
-  navigate,
-  backend_url
-};
-
-return (
-  <ShopContext.Provider value={value}>
-    {props.children}
-  </ShopContext.Provider>
-);
+  return (
+    <ShopContext.Provider value={value}>
+      {props.children}
+    </ShopContext.Provider>
+  );
 };
 
 export default ShopContextProvider;

@@ -1,68 +1,70 @@
 import mongoose from 'mongoose';
 
+// Define the Product schema (structure of product data in database)
 const productSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: true,
-    trim: true
+    required: true, // This field is required
+    trim: true // Remove extra spaces
   },
   price: {
     type: Number,
     required: true,
-    min: 0
+    min: 0 // Price cannot be negative
   },
   image: {
     type: String,
-    required: true
+    required: true // Base64 image string
   },
   category: {
     type: String,
     required: true,
-    enum: ['men', 'women', 'kids']
+    enum: ['men', 'women', 'kids'] // Only these values are allowed
   },
   subCategory: {
     type: String,
     required: true,
-    enum: ['topwear', 'bottomwear', 'winter']
+    enum: ['topwear', 'bottomwear', 'winter'] // Only these values are allowed
   },
   bestseller: {
     type: Boolean,
-    default: false
+    default: false // Not a bestseller by default
   },
   description: {
     type: String,
     required: true
   },
   sizes: {
-    type: [String],
+    type: [String], // Array of strings
     required: true,
     validate: {
       validator: function(v) {
+        // At least one size must be provided
         return v && v.length > 0;
       },
       message: 'At least one size must be provided'
     }
   }
 }, {
-  timestamps: true
+  timestamps: true // Automatically add createdAt and updatedAt fields
 });
 
-// Add virtual id field that matches the frontend expectation
+// Add virtual id field (converts _id to id for frontend compatibility)
 productSchema.virtual('id').get(function() {
   return this._id.toString();
 });
 
-// Ensure virtual fields are serialized
+// When converting to JSON, include virtual fields
 productSchema.set('toJSON', {
   virtuals: true,
   transform: function(doc, ret) {
-    delete ret._id;
-    delete ret.__v;
+    delete ret._id; // Remove MongoDB's _id
+    delete ret.__v; // Remove version key
     return ret;
   }
 });
 
+// Create Product model from schema
 const Product = mongoose.model('Product', productSchema);
 
 export default Product;
-

@@ -1,88 +1,70 @@
-// Create error object with status code
-const createError = (message, statusCode, errors = null) => {
+// Helper function to create error objects
+function createError(message, statusCode) {
   const error = new Error(message);
   error.statusCode = statusCode;
-  error.status = `${statusCode}`.startsWith('4') ? 'fail' : 'error';
+  error.status = statusCode >= 400 && statusCode < 500 ? 'fail' : 'error';
   error.isOperational = true;
-
-  if (errors) {
-    error.errors = errors;
-  }
-
   return error;
-};
+}
 
-// Error creation functions
-export const badRequest = (message = 'Bad Request', errors = null) => {
-  return createError(message, 400, errors);
-};
+// Error helper functions - simple functions that create errors
+export function badRequest(message) {
+  return createError(message || 'Bad Request', 400);
+}
 
-export const unauthorized = (message = 'Unauthorized') => {
-  return createError(message, 401);
-};
+export function unauthorized(message) {
+  return createError(message || 'Unauthorized', 401);
+}
 
-export const forbidden = (message = 'Forbidden') => {
-  return createError(message, 403);
-};
+export function forbidden(message) {
+  return createError(message || 'Forbidden', 403);
+}
 
-export const notFound = (message = 'Resource not found') => {
-  return createError(message, 404);
-};
+export function notFound(message) {
+  return createError(message || 'Resource not found', 404);
+}
 
-export const conflict = (message = 'Resource already exists') => {
-  return createError(message, 409);
-};
+export function conflict(message) {
+  return createError(message || 'Resource already exists', 409);
+}
 
-export const validationError = (message = 'Validation failed', errors = {}) => {
-  return createError(message, 400, errors);
-};
+// Main error handler - handles all errors
+export function errorHandler(err, req, res, next) {
+  // Set default status code if not set
+  const statusCode = err.statusCode || 500;
+  const status = err.status || 'error';
 
-// Central Error Handler Middleware
-export const errorHandler = (err, req, res, next) => {
-  err.statusCode = err.statusCode || 500;
-  err.status = err.status || 'error';
-
-  // Development error response
+  // In development, show detailed error information
   if (process.env.NODE_ENV === 'development') {
-    return res.status(err.statusCode).json({
+    return res.status(statusCode).json({
       success: false,
-      status: err.status,
-      error: err,
+      status: status,
       message: err.message,
+      error: err,
       stack: err.stack
     });
   }
 
-  // Production error response
-  // Operational, trusted error: send message to client
+  // In production, only show safe error messages
   if (err.isOperational) {
-    return res.status(err.statusCode).json({
+    return res.status(statusCode).json({
       success: false,
-      status: err.status,
-      message: err.message,
-      ...(err.errors && { errors: err.errors })
+      status: status,
+      message: err.message
     });
   }
 
-  // Programming or other unknown error: don't leak error details
-  console.error('ERROR 💥', err);
-
+  // For unexpected errors, don't expose details
+  console.error('ERROR:', err);
   return res.status(500).json({
     success: false,
     status: 'error',
     message: 'Something went wrong!'
   });
-};
+}
 
-// Handle async errors
-export const catchAsync = (fn) => {
-  return (req, res, next) => {
-    fn(req, res, next).catch(next);
-  };
-};
-
-// Handle 404 Not Found route
-export const notFoundRoute = (req, res, next) => {
-  const err = notFound(`Can't find ${req.originalUrl} on this server!`);
-  next(err);
-};
+// Handle 404 - when route is not found
+export function notFoundRoute(req, res, next) {
+  const error = notFound(`Cannot find ${req.originalUrl} on this server`);
+  next(error);
+}

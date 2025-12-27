@@ -7,24 +7,26 @@ import userRoutes from './routes/userRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import { errorHandler, notFoundRoute } from './middleware/errorHandler.js';
 
+// Load environment variables
 dotenv.config();
 
+// Create Express app
 const app = express();
 
-// Connect to database
+// Connect to MongoDB database
 connectDB();
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Middleware - these run on every request
+app.use(cors()); // Allow requests from frontend
+app.use(express.json()); // Parse JSON data from requests
+app.use(express.urlencoded({ extended: true })); // Parse form data
 
-// Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/product', productRoutes);
-app.use('/api/user', userRoutes);
+// API Routes
+app.use('/api/auth', authRoutes); // Authentication routes (login, register)
+app.use('/api/product', productRoutes); // Product routes
+app.use('/api/user', userRoutes); // User management routes (admin only)
 
-// Health check
+// Health check endpoint
 app.get('/api/health', (req, res) => {
   res.status(200).json({
     success: true,
@@ -33,15 +35,14 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Handle 404 - must be after all routes
+// Handle 404 - if route doesn't exist
 app.use(notFoundRoute);
 
-// Error handling middleware - must be last
+// Handle all errors - must be last
 app.use(errorHandler);
 
+// Start server
 const PORT = process.env.PORT || 5000;
-
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
